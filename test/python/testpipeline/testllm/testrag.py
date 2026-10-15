@@ -223,3 +223,53 @@ class TestRAG(unittest.TestCase):
         ]:
             rag = RAG(self.embeddings, model, task=task)
             self.assertIsNotNone(rag)
+
+
+class TestRAGQueryOperator(unittest.TestCase):
+    """
+    Tests for required (+term) and prohibited (-term) query token filtering.
+
+    These build a RAG instance without loading a model and stub similarity
+    scoring, so they run fully offline.
+    """
+
+    TEXTS = (
+        "C++ programming language guide",
+        "basic C concepts and examples",
+        "Python list comprehension",
+    )
+
+    @classmethod
+    def build(cls):
+        rag = RAG.__new__(RAG)
+        rag.minscore = -1.0
+        rag.mintokens = 0.0
+
+        def score(queries, texts):
+            n = len(cls.TEXTS)
+            return (
+                [[(i, 0.9) for i in range(n)] for _ in queries],
+                [(i, text) for i, text in enumerate(cls.TEXTS)],
+                [["x"] for _ in range(n)],
+            )
+
+        rag.score = score
+        return rag
+
+    def query(self, statement):
+        rag = self.build()
+        return [chunk[1] for chunk in rag.query([statement], self.TEXTS)[0]]
+
+    def testRequiredTermEndingInPlus(self):
+        """A required term ending in '+' (e.g. C++) must keep the trailing pluses."""
+        self.assertEqual(self.query("+C++"), [self.TEXTS[0]])
+
+    def testProhibitedTermEndingInPlus(self):
+        """A prohibited term ending in '+' must exclude only the matching segment."""
+        self.assertEqual(self.query("-C++"), [self.TEXTS[1], self.TEXTS[2]])
+
+    def testRequiredPlainTerm(self):
+        self.assertEqual(self.query("+python"), [self.TEXTS[2]])
+
+    def testProhibitedPlainTerm(self):
+        self.assertEqual(self.query("-basic"), [self.TEXTS[0], self.TEXTS[2]])
