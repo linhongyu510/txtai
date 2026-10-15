@@ -198,8 +198,11 @@ class RAG(Pipeline):
         results = []
         for i, query in enumerate(queries):
             # Get list of required and prohibited tokens
-            must = [token.strip("+") for token in query.split() if token.startswith("+") and len(token) > 1]
-            mnot = [token.strip("-") for token in query.split() if token.startswith("-") and len(token) > 1]
+            # Only the leading operator sign is stripped; strip()/rstrip() would
+            # also remove trailing +/- characters that are part of the term
+            # (e.g. "+C++" must require "C++", not "C").
+            must = [token.removeprefix("+") for token in query.split() if token.startswith("+") and len(token) > 1]
+            mnot = [token.removeprefix("-") for token in query.split() if token.startswith("-") and len(token) > 1]
 
             # Segment text is static when texts is passed in but different per query when an embeddings search is run
             segment = segments if texts else segments[i]
@@ -313,7 +316,7 @@ class RAG(Pipeline):
         Args:
             questions: questions
             contexts: question context
-            kwargs: additional keyword arguments to pass to model
+            kwargs: additional keyword arguments to pass to pipeline model
 
         Returns:
             answers
