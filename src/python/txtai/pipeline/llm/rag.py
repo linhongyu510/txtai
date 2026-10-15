@@ -316,7 +316,7 @@ class RAG(Pipeline):
         Args:
             questions: questions
             contexts: question context
-            kwargs: additional keyword arguments to pass to pipeline model
+            kwargs: additional keyword arguments to pass to model
 
         Returns:
             answers
