@@ -442,6 +442,27 @@ class TestGraph(unittest.TestCase):
         self.assertEqual(len(embeddings.graph.edges(0)), len(self.data) - 1)
         embeddings.close()
 
+    def testRelationshipsIntegerIds(self):
+        """
+        Test manually-provided relationships with integer ids and content disabled.
+        See https://github.com/neuml/txtai/issues/1474.
+        """
+
+        # keyword indexing avoids a model download; minscore=1.0 suppresses
+        # inferred edges so the only edge present should be the manual one.
+        config = {"keyword": True, "content": False, "graph": {"minscore": 1.0}}
+        embeddings = Embeddings(config)
+
+        embeddings.index(
+            [
+                {"id": 0, "text": "apple", "relationships": [{"id": 1, "weight": 0.7}]},
+                {"id": 1, "text": "banana"},
+            ]
+        )
+
+        self.assertEqual(embeddings.graph.edgecount(), 1)
+        embeddings.close()
+
     def testRelationshipsInvalid(self):
         """
         Test manually-provided relationships with no matching id

@@ -33,12 +33,16 @@ class Ids:
         # Resolve ids using database if available, otherwise fallback to embeddings ids
         results = self.database.ids(ids) if self.database else self.scan(ids)
 
-        # Create dict of id: [iids] given there is a one to many relationship
+        # Create dict of id: [iids] given there is a one to many relationship.
+        # Keys are normalized to strings so callers (e.g. graph relationship
+        # resolution) can look them up with str(uid) regardless of whether
+        # ids were stored as integers or strings.
         ids = {}
         for iid, uid in results:
-            if uid not in ids:
-                ids[uid] = []
-            ids[uid].append(iid)
+            key = str(uid)
+            if key not in ids:
+                ids[key] = []
+            ids[key].append(iid)
 
         return ids
 
